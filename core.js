@@ -116,7 +116,7 @@ function getTitle(title){
     for(var i = splitArray.length-1; i >= 0; i--){
         if(ignoreNames.indexOf(splitArray[i].toLowerCase()) < 0){
             title = splitArray[i];
-            return removeOrder(title);
+            return removeOrder(title) + (i > 0 ? ' | '+splitArray[i+1] : '') ;
         }
     }
 
