@@ -80,7 +80,6 @@ function sendPayload (res) {
     time = time < 0 ? time * (-1) : time;
 
     if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 2)){ //2 seconds
-        console.log(payload);
         client.updatePresence(payload);
         log.info('Presence updated!');
     }
