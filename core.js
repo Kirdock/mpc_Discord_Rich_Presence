@@ -79,7 +79,8 @@ function sendPayload (res) {
     var time = convert(playback.position) - (convert(playback.prevPosition)+1);
     time = time < 0 ? time * (-1) : time;
 
-    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 2)){ //2 Sekunden Abweichung darf sein
+    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 2)){ //2 seconds
+        console.log(payload);
         client.updatePresence(payload);
         log.info('Presence updated!');
     }
