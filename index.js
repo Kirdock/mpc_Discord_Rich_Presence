@@ -21,7 +21,6 @@ log.info('INFO: Fully ready')
 log.info('INFO: Listening on ' + uri)
 
 mediaEmitter.on('CONNECTED', function (res) {
-	console.log('update');
 	active = core(res)
 })
 

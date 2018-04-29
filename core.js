@@ -41,7 +41,6 @@ function sendPayload (res) {
     var { document } = new JSDOM(res.body).window;
     var dir = document.getElementById('filedir').textContent;
     var files = fs.readdirSync(dir).sort();
-    console.log(files);
     playback.episodecount = getFirstNumbers(files[files.length-1]) || 1;
 
     playback.episode      = getFirstNumbers(document.getElementById('file').textContent) || 1;
@@ -70,7 +69,6 @@ function sendPayload (res) {
             payload.startTimestamp = undefined;
             break;
         case '1': // Paused
-            // payload.state = playback.position + ' / ' + playback.duration
             payload.startTimestamp = undefined;
             break;
         case '2': // Playing
@@ -78,18 +76,21 @@ function sendPayload (res) {
             break;
     }
 
-    if ( (playback.state != playback.prevState) || (playback.state == '2' && convert(playback.position) != convert(playback.prevPosition) + 1)){
+    var time = convert(playback.position) - (convert(playback.prevPosition)+1);
+    time = time < 0 ? time * (-1) : time;
+
+    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 2)){ //2 Sekunden Abweichung darf sein
         client.updatePresence(payload);
         log.info('Presence updated!');
     }
     
     playback.prevState = playback.state;
     playback.prevPosition = playback.position;
-    log.warn(
-        'CONNECTED - ' +
-        states[playback.state].string + ' - ' +
-        playback.position + ' / ' + playback.duration + ' - ' +
-        playback.filename);
+    // log.warn(
+    //     'CONNECTED - ' +
+    //     states[playback.state].string + ' - ' +
+    //     playback.position + ' / ' + playback.duration + ' - ' +
+    //     playback.filename);
         
     return true;
 
@@ -116,7 +117,7 @@ function getTitle(title){
     for(var i = splitArray.length-1; i >= 0; i--){
         if(ignoreNames.indexOf(splitArray[i].toLowerCase()) < 0){
             title = splitArray[i];
-            return removeOrder(title) + (i < splitArray.length-1 ? ' | '+splitArray[i+1] : '') ;
+            return removeOrder(title) + (i < splitArray.length-1 && splitArray[i+1].toLowerCase() != ignoreNames[0] ? ' | '+splitArray[i+1] : '') ;
         }
     }
 
