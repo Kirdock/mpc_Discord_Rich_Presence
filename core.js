@@ -45,8 +45,7 @@ function sendPayload (res) {
 
     playback.episode      = getFirstNumbers(document.getElementById('file').textContent) || 1;
     playback.state        = document.getElementById('state').textContent;
-    playback.duration     = sanitizeTime(document.getElementById('durationstring').textContent);
-    playback.position     = sanitizeTime(document.getElementById('positionstring').textContent);
+    playback.position     = parseInt(document.getElementById('position').textContent);
     playback.filename     = getTitle(dir);
     var payload = {
         state: 'Episode',
@@ -77,25 +76,19 @@ function sendPayload (res) {
             payload.startTimestamp = undefined;
             break;
         case '2': // Playing
-            payload.startTimestamp = (Date.now() / 1000) - convert(playback.position);
+            payload.startTimestamp = (Date.now() - playback.position)/1000;
             break;
     }
 
-    var time = convert(playback.position) - (convert(playback.prevPosition)+1);
-    time = time < 0 ? time * (-1) : time;
+    var time = Math.abs(playback.position - (playback.prevPosition+1000));
 
-    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 2)){ //2 seconds tolerance
+    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 1000)){ //1 second tolerance
         client.updatePresence(payload);
         log.info('Presence updated!');
     }
     
     playback.prevState = playback.state;
     playback.prevPosition = playback.position;
-    log.warn(
-        'CONNECTED - ' +
-        states[playback.state].string + ' - ' +
-        playback.position + ' / ' + playback.duration + ' - ' +
-        playback.filename);
         
     return true;
 
