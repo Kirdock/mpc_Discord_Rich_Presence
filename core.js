@@ -61,12 +61,17 @@ function sendPayload (res) {
 
     switch (playback.state) {
         case '-1': // Idling
-            // payload.state = states[playback.state].string
             payload.details = undefined;
             payload.startTimestamp = undefined;
+            payload.state = undefined;
+            payload.partyMax = undefined;
+            payload.partySize = undefined;
             break;
         case '0': // Stopped
             payload.startTimestamp = undefined;
+            payload.state = undefined;
+            payload.partyMax = undefined;
+            payload.partySize = undefined;
             break;
         case '1': // Paused
             payload.startTimestamp = undefined;
@@ -79,18 +84,18 @@ function sendPayload (res) {
     var time = convert(playback.position) - (convert(playback.prevPosition)+1);
     time = time < 0 ? time * (-1) : time;
 
-    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 2)){ //2 seconds
+    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 2)){ //2 seconds tolerance
         client.updatePresence(payload);
         log.info('Presence updated!');
     }
     
     playback.prevState = playback.state;
     playback.prevPosition = playback.position;
-    // log.warn(
-    //     'CONNECTED - ' +
-    //     states[playback.state].string + ' - ' +
-    //     playback.position + ' / ' + playback.duration + ' - ' +
-    //     playback.filename);
+    log.warn(
+        'CONNECTED - ' +
+        states[playback.state].string + ' - ' +
+        playback.position + ' / ' + playback.duration + ' - ' +
+        playback.filename);
         
     return true;
 
