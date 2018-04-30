@@ -91,21 +91,6 @@ function sendPayload (res) {
     playback.prevPosition = playback.position;
         
     return true;
-
-    function convert (time) {
-        let parts = time.split(':');
-            seconds = parseInt(parts[parts.length-1]),
-            minutes = parseInt(parts[parts.length-2]),
-            hours = (parts.length > 2) ? parseInt(parts[0]) : 0
-        return ((hours * 60 * 60) + (minutes * 60) + seconds);
-    }
-    
-    function sanitizeTime (time) {
-        if (time.split(':')[0] == '00') {
-            return time.substr(3, time.length-1);
-        }
-        return time;
-    }
 }
 
 function getTitle(title){
@@ -115,7 +100,17 @@ function getTitle(title){
     for(var i = splitArray.length-1; i >= 0; i--){
         if(ignoreNames.indexOf(splitArray[i].toLowerCase()) < 0){
             title = splitArray[i];
-            return removeOrder(title) + (i < splitArray.length-1 && splitArray[i+1].toLowerCase() != ignoreNames[0] ? ' | '+splitArray[i+1] : '') ;
+            var text = (i < splitArray.length-1 && splitArray[i+1].toLowerCase() != ignoreNames[0] ? splitArray[i+1] : '');
+            if(!text){
+                var regExp = /\(([^)]+)\)/;
+                var matches = regExp.exec(title);
+                if(matches){
+                    text = matches[1];
+                }
+                
+            }
+            text = text ? ' | '+text : '';
+            return removeOrder(title) +  text;
         }
     }
 
