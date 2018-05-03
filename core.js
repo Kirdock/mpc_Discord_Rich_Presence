@@ -14,6 +14,7 @@ var playback = {
     prevState: '',
     prevPosition: '',
 };
+var updateTimer = 0;
 
 const states = {
     '-1': {
@@ -82,9 +83,14 @@ function sendPayload (res) {
 
     var time = Math.abs(playback.position - (playback.prevPosition+1000));
 
-    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 1000)){ //1 second tolerance
+    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 1000) //1 second tolerance
+        || updateTimer >= 60){ //send every miniute a sign of life
+        updateTimer = 0;
         client.updatePresence(payload);
         log.info('Presence updated!');
+    }
+    else{
+        updateTimer ++;
     }
     
     playback.prevState = playback.state;
