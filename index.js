@@ -3,13 +3,10 @@ const log = require('fancy-log')
 log.info('INFO: Loading...')
 
 const snekfetch = require('snekfetch'),
-	  fs = require('fs'),
 	  core = require('./core'),
 	  events = require('events')
 
-const config = JSON.parse(fs.readFileSync(`./config.json`, {
-	encoding: 'utf8'
-}))
+var config= require('./config');
 
 var mediaEmitter = new events.EventEmitter(),
 	active = false;

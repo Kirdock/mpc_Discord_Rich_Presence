@@ -14,7 +14,6 @@ var playback = {
     prevState: '',
     prevPosition: '',
 };
-var updateTimer = 0;
 
 const states = {
     '-1': {
@@ -61,20 +60,12 @@ function sendPayload (res) {
 
     switch (playback.state) {
         case '-1': // Idling
-            payload.details = undefined;
-            payload.startTimestamp = undefined;
-            payload.state = undefined;
-            payload.partyMax = undefined;
-            payload.partySize = undefined;
-            break;
         case '0': // Stopped
-            payload.startTimestamp = undefined;
-            payload.state = undefined;
-            payload.partyMax = undefined;
-            payload.partySize = undefined;
+            resetInformation();
+            payload.startTimestamp = Date.now()/1000;
             break;
         case '1': // Paused
-            payload.startTimestamp = undefined;
+            payload.startTimestamp = Date.now()/1000;
             break;
         case '2': // Playing
             payload.startTimestamp = (Date.now() - playback.position)/1000;
@@ -83,20 +74,21 @@ function sendPayload (res) {
 
     var time = Math.abs(playback.position - (playback.prevPosition+1000));
 
-    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 1000) //1 second tolerance
-        || updateTimer >= 60){ //send every miniute a sign of life
-        updateTimer = 0;
+    if ( (playback.state != playback.prevState) 
+        || (playback.state == '2' && time > 1000)){ //1 second tolerance
         client.updatePresence(payload);
         log.info('Presence updated!');
-    }
-    else{
-        updateTimer ++;
+        
     }
     
     playback.prevState = playback.state;
     playback.prevPosition = playback.position;
         
     return true;
+
+    function resetInformation(){
+        payload.paused = payload.details = payload.startTimestamp = payload.state = payload.partyMax = payload.partySize = undefined;
+    }
 }
 
 function getTitle(title){
