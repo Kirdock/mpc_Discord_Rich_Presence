@@ -1,18 +1,20 @@
-const DiscordRP = require('discord-rich-presence'),
-      client = new DiscordRP('436465482111909889'),
-      log = require('fancy-log');
+const log = require('fancy-log');
       jsdom = require('jsdom'),
       { JSDOM } = jsdom;
 const fs = require('fs');
 
 var playback = {
-    filename: '',
+    filedir: '',
     position: '',
     duration: '',
     fileSize: '',
     state: '',
     prevState: '',
     prevPosition: '',
+};
+
+String.prototype.trimStr = function (length) {
+    return this.length > length ? this.substring(0, length - 3) + "..." : this;
 };
 
 const states = {
@@ -34,50 +36,73 @@ const states = {
     }
 };
 
-function sendPayload (res) {
+const updatePresence = (res, rpc) => {
     if(!res){
-        client.updatePresence({});
+        rpc.setActivity({})
+            .catch((err) => {
+                log.error('ERROR: ', err);
+            });
+            return;
     }
-    var { document } = new JSDOM(res.body).window;
-    var dir = document.getElementById('filedir').textContent;
-    var files = fs.readdirSync(dir).sort();
-    playback.episodecount = getFirstNumbers(files[files.length-1]) || 1;
-
-    playback.episode      = getFirstNumbers(document.getElementById('file').textContent) || 1;
+    const { document } = new JSDOM(res.body).window;
+    const dir = document.getElementById('filedir').textContent;
+    
+    if(dir.indexOf('Weiteres') >= 0){
+        return false;
+    }
+    const files = fs.readdirSync(dir).filter(item => !(/(^|\/)\.[^\/\.]/g).test(item)).sort();
+    const lastFile = files[files.length-1];
+    let eipsode_name = document.getElementById('file').textContent;
+    const index = eipsode_name.indexOf(' - ');
+    
+    playback.episodecount = getFirstNumbers(lastFile) || 1;
+    playback.episode      = getFirstNumbers(eipsode_name) || 1;
     playback.state        = document.getElementById('state').textContent;
     playback.position     = parseInt(document.getElementById('position').textContent);
-    playback.filename     = getTitle(dir);
-    var payload = {
+    playback.filedir      = getTitle(dir).trimStr(128);
+    eipsode_name          = eipsode_name.substring((index == -1 ? 0 : index+3), eipsode_name.lastIndexOf('.'));
+    
+    let payload = {
         state: 'Episode',
         startTimestamp: 0,
-        details: playback.filename,
+        details: playback.filedir,
         largeImageKey: "default",
+        largeImageText: eipsode_name,
         smallImageKey: states[playback.state].stateKey,
         smallImageText: states[playback.state].string,
         partySize: playback.episode,
         partyMax: playback.episodecount
     }
 
+    
+
     switch (playback.state) {
-        case '-1': // Idling
+        case '-1': //Idling
         case '0': // Stopped
-            resetInformation();
-            payload.startTimestamp = Date.now()/1000;
-            break;
         case '1': // Paused
-            payload.startTimestamp = Date.now()/1000;
+            payload.startTimestamp = parseInt(Date.now()/1000);
             break;
         case '2': // Playing
-            payload.startTimestamp = (Date.now() - playback.position)/1000;
+            payload.startTimestamp = parseInt((Date.now() - playback.position)/1000);
+            break;
+        
+        default:
+            resetInformation(payload);
+            payload.startTimestamp = parseInt(Date.now()/1000);
             break;
     }
 
-    var time = Math.abs(playback.position - (playback.prevPosition+1000));
-
+    const time = Math.abs(playback.position - playback.prevPosition - 5000); //5000: interval is every 5 seconds
     if ( (playback.state != playback.prevState) 
-        || (playback.state == '2' && time > 1000)){ //1 second tolerance
-        client.updatePresence(payload);
-        log.info('Presence updated!');
+        || (playback.state == '2' && time > 1000) //1 second tolerance
+        ){
+            rpc.setActivity(payload)
+            .catch((err) => {
+                log.error('ERROR: ', err);
+            });
+            log.info('INFO: Presence update sent: ' +
+                `${states[playback.state].string} - ${playback.position} / ${playback.duration} - ${playback.filedir}`
+            );
         
     }
     
@@ -86,24 +111,26 @@ function sendPayload (res) {
         
     return true;
 
-    function resetInformation(){
+    function resetInformation(payload){
         payload.paused = payload.details = payload.startTimestamp = payload.state = payload.partyMax = payload.partySize = undefined;
     }
 }
 
 function getTitle(title){
-    var splitArray = title.split('\\');
-    var ignoreNames = ['anime','ova', 'web', 'special', 'spezial', 'tv special', 'filme', '2) ger sub (309-xxx)'];
+    const splitArray = title.split('\\');
+    const ignoreNames = ['anime','ova', 'web', 'special', 'spezial', 'tv special', 'filme', '2) ger sub (309-xxx)'];
 
-    for(var i = splitArray.length-1; i >= 0; i--){
-        if(ignoreNames.indexOf(splitArray[i].toLowerCase()) < 0){
+    for(let i = splitArray.length-1; i >= 0; i--){
+        if(ignoreNames.indexOf(splitArray[i].toLowerCase()) < 0 && splitArray[i].indexOf('Staffel') < 0 && splitArray[i].indexOf('Ger Dub') < 0){
             title = splitArray[i];
-            var text = (i < splitArray.length-1 && splitArray[i+1].toLowerCase() != ignoreNames[0] ? splitArray[i+1] : '');
+            let text = (i < splitArray.length-1 && splitArray[i+1].toLowerCase() != ignoreNames[0] ? splitArray[i+1] : '');
             if(!text){
-                var regExp = /\(([^)]+)\)/;
-                var matches = regExp.exec(title);
+                let matches = (/\(([^)]+)\)/).exec(title);
                 if(matches){
                     text = matches[1];
+                    if(!isNaN(parseInt(text.replace(/-| - |/,'')))){
+                        text = undefined;
+                    }
                 }
                 
             }
@@ -115,9 +142,10 @@ function getTitle(title){
     return title;
 
     function removeOrder(text){
-        var number = getFirstNumbers(text);
+        const number = getFirstNumbers(text);
         if(!isNaN(number)){
-            var index, case1 = ') - ', case2= ') ';
+            let index;
+            const case1 = ') - ', case2= ') ';
             if((index = text.indexOf(case1) )>= 0){
                 text = text.substr(index+case1.length);
             }
@@ -134,4 +162,4 @@ function getFirstNumbers(text){
     return Number(text.replace(/(^\d+)(.+$)/i,'$1'));
 }
 
-module.exports = sendPayload;
+module.exports = updatePresence;
