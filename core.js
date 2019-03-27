@@ -118,24 +118,33 @@ const updatePresence = (res, rpc) => {
 
 function getTitle(title){
     const splitArray = title.split('\\');
-    const ignoreNames = ['anime','ova', 'web', 'special', 'spezial', 'tv special', 'filme', '2) ger sub (309-xxx)'];
+    const ignoreNames = ['anime', '2) ger sub (309-xxx)', 'Gesehen', 'Neu'];
+    const category = ['ova', 'web', 'special', 'tv special', 'specials', 'filme'];
 
+    let subtitle = '';
+    const search = ' - ';
     for(let i = splitArray.length-1; i >= 0; i--){
         if(ignoreNames.indexOf(splitArray[i].toLowerCase()) < 0 && splitArray[i].indexOf('Staffel') < 0 && splitArray[i].indexOf('Ger Dub') < 0){
             title = splitArray[i];
-            let text = (i < splitArray.length-1 && splitArray[i+1].toLowerCase() != ignoreNames[0] ? splitArray[i+1] : '');
-            if(!text){
-                let matches = (/\(([^)]+)\)/).exec(title);
-                if(matches){
-                    text = matches[1];
-                    if(!isNaN(parseInt(text.replace(/-| - |/,'')))){
-                        text = undefined;
-                    }
-                }
-                
+
+            let text = splitArray[i];
+
+            //#region get category; example: 1.1) (OVA) - myTitle
+            let matches = (/\(([^)]+)\)/).exec(title);
+            if(matches){
+                subtitle = ' | '+ matches[1] /**/ +' | ' + text.substring(text.indexOf(search)+search.length)/**/ + subtitle;
+                continue;
             }
-            text = text ? ' | '+text : '';
-            return removeOrder(title) +  text;
+            //#endregion
+
+            if(i > 0 && category.indexOf(splitArray[i-1].toLowerCase()) > -1 || category.indexOf(splitArray[i].toLowerCase()) > -1){
+                subtitle = (text ? ' | '+text : '') + subtitle;
+                // console.log(subtitle+';', text+';', title+';', splitArray[i-1].toLowerCase(), category.indexOf(splitArray[i-1].toLowerCase()));
+                continue;
+            }
+            else{
+                return removeOrder(title) +  subtitle;
+            }
         }
     }
 

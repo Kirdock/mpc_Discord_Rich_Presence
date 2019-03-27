@@ -43,7 +43,7 @@ function fetch_mpc_data() {
 		.catch(error =>{
 			mpc_update = setTimeout(fetch_mpc_data, 15000);
 			if (active) {
-				log.info('INFO: MPC closed');
+				log.info('INFO: MPC closed', error);
 				active = false;
 				destroyRPC();
 			}
@@ -60,11 +60,13 @@ function initRPC() {
 			clearTimeout(mpc_update);
 			await destroyRPC();
 			log.warn('WARN: Connection to Discord client was closed. Trying again in 5 seconds...');
+			destroyRPC();
 			setTimeout(initRPC,5000);
 		});
 	});
 	rpc.on('error',error =>{
-		log.warn('ERROR: Connection to Discord has failed. Trying again in 5 seconds...','clientId: '+clientId, error);
+		log.warn('ERROR: Connection to Discord has failed. Trying again in 5 seconds...; clientId: '+clientId +' error: ' + JSON.stringify(error));
+		destroyRPC();
 		setTimeout(initRPC,5000);
 	});
 	discord_login();
@@ -72,7 +74,7 @@ function initRPC() {
 
 function discord_login(){
 	rpc.login({clientId}).catch( error => {
-		log.warn('WARN: Connection to Discord has failed. Trying again in 5 seconds...','clientId: '+clientId, error);
+		log.warn('ERROR: Connection to Discord has failed. Trying again in 5 seconds...; clientId: '+clientId +' error: ' + JSON.stringify(error));
 		setTimeout(discord_login,5000);
 	});
 }
