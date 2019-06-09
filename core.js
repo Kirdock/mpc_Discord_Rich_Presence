@@ -2,6 +2,8 @@ const log = require('fancy-log');
       jsdom = require('jsdom'),
       { JSDOM } = jsdom;
 const fs = require('fs');
+const special_regex = /^\d+(\.\d+)?\) \(([^)]+)\)/;
+const special_index = 2;
 
 var playback = {
     filedir: '',
@@ -119,7 +121,7 @@ const updatePresence = (res, rpc) => {
 function getTitle(title){
     const splitArray = title.split('\\');
     const ignoreNames = ['anime', '2) ger sub (309-xxx)', 'Gesehen', 'Neu'];
-    const category = ['ova', 'web', 'special', 'tv special', 'specials', 'filme'];
+    const category = ['ova', 'web', 'special', 'tv special', 'specials', 'filme', 'extras', 'movie'];
 
     let subtitle = '';
     const search = ' - ';
@@ -130,9 +132,9 @@ function getTitle(title){
             let text = splitArray[i];
 
             //#region get category; example: 1.1) (OVA) - myTitle
-            let matches = (/\(([^)]+)\)/).exec(title);
+            let matches = special_regex.exec(title);
             if(matches){
-                subtitle = ' | '+ matches[1] /**/ +' | ' + text.substring(text.indexOf(search)+search.length)/**/ + subtitle;
+                subtitle = ' | '+ matches[special_index] /**/ +' | ' + text.substring(text.indexOf(search)+search.length)/**/ + subtitle;
                 continue;
             }
             //#endregion

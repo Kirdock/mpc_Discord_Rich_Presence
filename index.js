@@ -75,14 +75,21 @@ function initRPC() {
 function discord_login(){
 	rpc.login({clientId}).catch( error => {
 		log.warn('ERROR: Connection to Discord has failed. Trying again in 5 seconds...; clientId: '+clientId +' error: ' + JSON.stringify(error));
-		setTimeout(discord_login,5000);
+		destroyRPC();
+		initRPC();
 	});
 }
 
 // Destroys any active RPC connection.
 async function destroyRPC() {
-	if (!rpc) return;
-	await rpc.destroy();
+	if (rpc){
+		try{
+			await rpc.destroy();
+		}
+		catch(ex){
+			log.warn('ERROR: destroying rps not possible; clientId: '+clientId +' error: ' + JSON.stringify(ex));
+		}
+	}
 }
 
 // Boots the whole script, attempting to connect
