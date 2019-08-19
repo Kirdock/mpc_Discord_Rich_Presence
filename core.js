@@ -4,6 +4,7 @@ const log = require('fancy-log');
 const fs = require('fs');
 const special_regex = /^\d+(\.\d+)?\) \(([^)]+)\)/;
 const special_index = 2;
+const search = ' - ';
 
 var playback = {
     filedir: '',
@@ -55,21 +56,19 @@ const updatePresence = (res, rpc) => {
     const files = fs.readdirSync(dir).filter(item => !(/(^|\/)\.[^\/\.]/g).test(item)).sort();
     const lastFile = files[files.length-1];
     let eipsode_name = document.getElementById('file').textContent;
-    const index = eipsode_name.indexOf(' - ');
     
     playback.episodecount = getFirstNumbers(lastFile) || 1;
     playback.episode      = getFirstNumbers(eipsode_name) || 1;
     playback.state        = document.getElementById('state').textContent;
     playback.position     = parseInt(document.getElementById('position').textContent);
-    playback.filedir      = getTitle(dir).trimStr(128);
-    eipsode_name          = eipsode_name.substring((index == -1 ? 0 : index+3), eipsode_name.lastIndexOf('.'));
+    playback.filedir      = getTitle(dir, files.length > 1).trimStr(128);
     
     let payload = {
         state: 'Episode',
         startTimestamp: 0,
         details: playback.filedir,
         largeImageKey: "default",
-        largeImageText: eipsode_name,
+        largeImageText: get_episode_name(eipsode_name.substring(0,eipsode_name.indexOf('.'))),
         smallImageKey: states[playback.state].stateKey,
         smallImageText: states[playback.state].string,
         partySize: playback.episode,
@@ -118,13 +117,12 @@ const updatePresence = (res, rpc) => {
     }
 }
 
-function getTitle(title){
+function getTitle(title, moreThanOneFile){
     const splitArray = title.split('\\');
-    const ignoreNames = ['anime', '2) ger sub (309-xxx)', 'Gesehen', 'Neu'];
-    const category = ['ova', 'web', 'special', 'tv special', 'specials', 'filme', 'extras', 'movie'];
+    const ignoreNames = ['anime', '2) ger sub (309-xxx)', 'Gesehen', 'Neu', 'Other'];
+    const category = ['ova', 'web', 'special', 'tv special', 'specials', 'filme', 'extras', 'movie', 'bonus'];
 
     let subtitle = '';
-    const search = ' - ';
     for(let i = splitArray.length-1; i >= 0; i--){
         if(ignoreNames.indexOf(splitArray[i].toLowerCase()) < 0 && splitArray[i].indexOf('Staffel') < 0 && splitArray[i].indexOf('Ger Dub') < 0){
             title = splitArray[i];
@@ -133,16 +131,19 @@ function getTitle(title){
 
             //#region get category; example: 1.1) (OVA) - myTitle
             let matches = special_regex.exec(title);
-            if(matches){
-                subtitle = ' | '+ matches[special_index] /**/ +' | ' + text.substring(text.indexOf(search)+search.length)/**/ + subtitle;
+            if(matches && ignoreNames.indexOf(matches[special_index]) == -1){
+                let temp = ' | '+ matches[special_index];
+                if(moreThanOneFile){
+                    temp = temp.toString() + (' | ' + get_episode_name(text));
+                }
+                subtitle = temp + subtitle;
+                
                 continue;
             }
             //#endregion
 
             if(i > 0 && category.indexOf(splitArray[i-1].toLowerCase()) > -1 || category.indexOf(splitArray[i].toLowerCase()) > -1){
                 subtitle = (text ? ' | '+text : '') + subtitle;
-                // console.log(subtitle+';', text+';', title+';', splitArray[i-1].toLowerCase(), category.indexOf(splitArray[i-1].toLowerCase()));
-                continue;
             }
             else{
                 return removeOrder(title) +  subtitle;
@@ -167,6 +168,11 @@ function getTitle(title){
         }
         return text;
     }
+}
+
+function get_episode_name(text){
+    let subtext_index = text.indexOf(search);
+    return subtext_index > -1 && isNaN(text.substring(0,subtext_index)) ? text : text.substring(subtext_index + search.length);
 }
 
 function getFirstNumbers(text){
