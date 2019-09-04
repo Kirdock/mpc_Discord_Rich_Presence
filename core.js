@@ -1,10 +1,12 @@
 const log = require('fancy-log');
       jsdom = require('jsdom'),
-      { JSDOM } = jsdom;
+      { JSDOM } = jsdom,
+      config = require('./config');
 const fs = require('fs');
 const special_regex = /^\d+(\.\d+)?\) \(([^)]+)\)/;
 const special_index = 2;
 const search = ' - ';
+const usedTimeStamp = config.useStartTimeStamp ? setStartTimeStamp : setEndTimeStamp;
 
 var playback = {
     filedir: '',
@@ -84,9 +86,7 @@ const updatePresence = (res, rpc) => {
             payload.startTimestamp = parseInt(Date.now()/1000);
             break;
         case '2': // Playing
-            payload.startTimestamp = undefined;
-            //payload.startTimestamp = parseInt((Date.now() - playback.position)/1000);
-            payload.endTimestamp = parseInt((Date.now() + parseInt(document.getElementById('duration').textContent) - playback.position)/1000);
+            usedTimeStamp(payload, playback, document);
             break;
         
         default:
@@ -117,6 +117,15 @@ const updatePresence = (res, rpc) => {
     function resetInformation(payload){
         payload.paused = payload.details = payload.startTimestamp = payload.endTimestamp = payload.state = payload.partyMax = payload.partySize = undefined;
     }
+}
+
+function setEndTimeStamp(payload, playback, document){
+    payload.startTimestamp = undefined;
+    payload.endTimestamp = parseInt((Date.now() + parseInt(document.getElementById('duration').textContent) - playback.position)/1000);
+}
+
+function setStartTimeStamp(payload, playback){
+    payload.startTimestamp = parseInt((Date.now() - playback.position)/1000);
 }
 
 function getTitle(title, moreThanOneFile){
