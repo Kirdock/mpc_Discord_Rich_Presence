@@ -172,7 +172,7 @@ function getTitle(title, moreThanOneFile){
 
 function get_episode_name(text){
     let subtext_index = text.indexOf(search);
-    return subtext_index > -1 && isNaN(text.substring(0,subtext_index)) ? text : text.substring(subtext_index + search.length);
+    return subtext_index == -1 || isNaN(text.substring(0,subtext_index)) ? text : text.substring(subtext_index + search.length);
 }
 
 function getFirstNumbers(text){
