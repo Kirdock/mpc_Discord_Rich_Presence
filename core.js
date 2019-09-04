@@ -84,7 +84,9 @@ const updatePresence = (res, rpc) => {
             payload.startTimestamp = parseInt(Date.now()/1000);
             break;
         case '2': // Playing
-            payload.startTimestamp = parseInt((Date.now() - playback.position)/1000);
+            payload.startTimestamp = undefined;
+            //payload.startTimestamp = parseInt((Date.now() - playback.position)/1000);
+            payload.endTimestamp = parseInt((Date.now() + parseInt(document.getElementById('duration').textContent) - playback.position)/1000);
             break;
         
         default:
@@ -113,7 +115,7 @@ const updatePresence = (res, rpc) => {
     return true;
 
     function resetInformation(payload){
-        payload.paused = payload.details = payload.startTimestamp = payload.state = payload.partyMax = payload.partySize = undefined;
+        payload.paused = payload.details = payload.startTimestamp = payload.endTimestamp = payload.state = payload.partyMax = payload.partySize = undefined;
     }
 }
 
