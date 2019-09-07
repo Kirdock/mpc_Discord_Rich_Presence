@@ -4,6 +4,7 @@ const log = require('fancy-log');
       config = require('./config');
 const fs = require('fs');
 const special_regex = /^\d+(\.\d+)?\) \(([^)]+)\)/;
+const special_regex_title = /^\d+(\.\d+)? \(([^)]+)\)/;
 const special_index = 2;
 const search = ' - ';
 const usedTimeStamp = config.useStartTimeStamp ? setStartTimeStamp : setEndTimeStamp;
@@ -64,13 +65,14 @@ const updatePresence = (res, rpc) => {
     playback.state        = document.getElementById('state').textContent;
     playback.position     = parseInt(document.getElementById('position').textContent);
     playback.filedir      = getTitle(dir, files.length > 1).trimStr(128);
-    
+    playback.duration     = parseInt(document.getElementById('duration').textContent);
+    let episode = get_episode_name(eipsode_name.substring(0,eipsode_name.lastIndexOf('.')));
     let payload = {
         state: 'Episode',
         startTimestamp: 0,
-        details: playback.filedir,
+        details: playback.filedir + (episode.category ? ' | '+episode.category.toString() : ''),
         largeImageKey: "default",
-        largeImageText: get_episode_name(eipsode_name.substring(0,eipsode_name.indexOf('.'))),
+        largeImageText: episode.name,
         smallImageKey: states[playback.state].stateKey,
         smallImageText: states[playback.state].string,
         partySize: playback.episode,
@@ -86,7 +88,7 @@ const updatePresence = (res, rpc) => {
             payload.startTimestamp = parseInt(Date.now()/1000);
             break;
         case '2': // Playing
-            usedTimeStamp(payload, playback, document);
+            usedTimeStamp(payload, playback);
             break;
         
         default:
@@ -119,9 +121,9 @@ const updatePresence = (res, rpc) => {
     }
 }
 
-function setEndTimeStamp(payload, playback, document){
+function setEndTimeStamp(payload, playback){
     payload.startTimestamp = undefined;
-    payload.endTimestamp = parseInt((Date.now() + parseInt(document.getElementById('duration').textContent) - playback.position)/1000);
+    payload.endTimestamp = parseInt((Date.now() + playback.duration - playback.position)/1000);
 }
 
 function setStartTimeStamp(payload, playback){
@@ -145,7 +147,7 @@ function getTitle(title, moreThanOneFile){
             if(matches && ignoreNames.indexOf(matches[special_index]) == -1){
                 let temp = ' | '+ matches[special_index];
                 if(moreThanOneFile){
-                    temp = temp.toString() + (' | ' + get_episode_name(text));
+                    temp = temp.toString() + (' | ' + get_episode_name(text).name);
                 }
                 subtitle = temp + subtitle;
                 
@@ -183,7 +185,23 @@ function getTitle(title, moreThanOneFile){
 
 function get_episode_name(text){
     let subtext_index = text.indexOf(search);
-    return subtext_index == -1 || isNaN(text.substring(0,subtext_index)) ? text : text.substring(subtext_index + search.length);
+    let result = {};
+    if(subtext_index > -1){
+        let textBefore = text.substring(0,subtext_index);
+        let matches = special_regex_title.exec(textBefore);
+        if(matches){
+            result.category = matches[special_index];
+        }
+        else if(isNaN(textBefore)){
+            result.name = text;
+        }
+        result.name = text.substring(subtext_index + search.length);
+    }
+    else{
+        result.name = text;
+    }
+    return result;
+    //return subtext_index == -1 || isNaN(text.substring(0,subtext_index)) ? text : text.substring(subtext_index + search.length);
 }
 
 function getFirstNumbers(text){
