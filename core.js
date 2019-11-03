@@ -53,62 +53,63 @@ const updatePresence = (res, rpc) => {
     const { document } = new JSDOM(res.body).window;
     const dir = document.getElementById('filedir').textContent;
     
-    if(dir.indexOf('Weiteres') >= 0){
+    if(!dir || dir.indexOf('Weiteres') > -1){
         return false;
     }
-    const files = fs.readdirSync(dir).filter(item => !(/(^|\/)\.[^\/\.]/g).test(item)).sort();
-    const lastFile = files[files.length-1];
-    let eipsode_name = document.getElementById('file').textContent;
-    
-    playback.episodecount = getFirstNumbers(lastFile) || 1;
-    playback.episode      = getFirstNumbers(eipsode_name) || 1;
+
     playback.state        = document.getElementById('state').textContent;
     playback.position     = parseInt(document.getElementById('position').textContent);
-    playback.filedir      = getTitle(dir, files.length > 1).trimStr(128);
-    playback.duration     = parseInt(document.getElementById('duration').textContent);
-    let episode = get_episode_name(eipsode_name.substring(0,eipsode_name.lastIndexOf('.')));
-    let payload = {
-        state: 'Episode',
-        startTimestamp: 0,
-        details: playback.filedir + (episode.category ? ' | '+episode.category.toString() : ''),
-        largeImageKey: "default",
-        largeImageText: episode.name,
-        smallImageKey: states[playback.state].stateKey,
-        smallImageText: states[playback.state].string,
-        partySize: playback.episode,
-        partyMax: playback.episodecount
-    }
-
-    
-
-    switch (playback.state) {
-        case '-1': //Idling
-        case '0': // Stopped
-        case '1': // Paused
-            payload.startTimestamp = parseInt(Date.now()/1000);
-            break;
-        case '2': // Playing
-            usedTimeStamp(payload, playback);
-            break;
-        
-        default:
-            resetInformation(payload);
-            payload.startTimestamp = parseInt(Date.now()/1000);
-            break;
-    }
-
     const time = Math.abs(playback.position - playback.prevPosition - 5000); //5000: interval is every 5 seconds
-    if ( (playback.state != playback.prevState) 
-        || (playback.state == '2' && time > 1000) //1 second tolerance
-        ){
-            rpc.setActivity(payload)
-            .catch((err) => {
-                log.error('ERROR: ', err);
-            });
-            log.info('INFO: Presence update sent: ' +
-                `${states[playback.state].string} - ${playback.position} / ${playback.duration} - ${playback.filedir}`
-            );
+
+    if ( (playback.state != playback.prevState) || (playback.state == '2' && time > 1000)) //1 second tolerance
+    {
+
+
+        const files = fs.readdirSync(dir).filter(item => !(/(^|\/)\.[^\/\.]/g).test(item)).sort();
+        const lastFile = files[files.length-1];
+        let eipsode_name = document.getElementById('file').textContent;
+        let episode = get_episode_name(eipsode_name.substring(0,eipsode_name.lastIndexOf('.')));
+
+        playback.episodecount = getFirstNumbers(lastFile) || 1;
+        playback.episode      = getFirstNumbers(eipsode_name) || 1;
+        playback.filedir      = getTitle(dir, files.length > 1).trimStr(128);
+        playback.duration     = parseInt(document.getElementById('duration').textContent);
         
+        let payload = {
+            state: 'Episode',
+            startTimestamp: 0,
+            details: playback.filedir + (episode.category ? ' | '+episode.category.toString() : ''),
+            largeImageKey: "default",
+            largeImageText: episode.name,
+            smallImageKey: states[playback.state].stateKey,
+            smallImageText: states[playback.state].string,
+            partySize: playback.episode,
+            partyMax: playback.episodecount
+        }
+
+        switch (playback.state) {
+            case '-1': //Idling
+            case '0': // Stopped
+            case '1': // Paused
+                payload.startTimestamp = parseInt(Date.now()/1000);
+                break;
+            case '2': // Playing
+                usedTimeStamp(payload, playback);
+                break;
+            
+            default:
+                resetInformation(payload);
+                payload.startTimestamp = parseInt(Date.now()/1000);
+                break;
+        }
+
+        rpc.setActivity(payload)
+        .catch((err) => {
+            log.error('ERROR: ', err);
+        });
+        log.info('INFO: Presence update sent: ' +
+            `${states[playback.state].string} - ${playback.position} / ${playback.duration} - ${playback.filedir}`
+        );
     }
     
     playback.prevState = playback.state;
