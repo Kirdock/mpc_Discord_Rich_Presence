@@ -44,11 +44,8 @@ const states = {
 
 const updatePresence = (res, rpc) => {
     if(!res){
-        rpc.setActivity({})
-            .catch((err) => {
-                log.error('ERROR: ', err);
-            });
-            return;
+        rpc.clearActivity();
+        return;
     }
     const { document } = new JSDOM(res.body).window;
     const dir = document.getElementById('filedir').textContent;

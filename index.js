@@ -1,5 +1,5 @@
 const log = require('fancy-log')
-
+const Discord = require('discord-rpc');
 log.info('INFO: Loading...')
 
 const snekfetch = require('snekfetch'),
@@ -45,7 +45,7 @@ function fetch_mpc_data() {
 			if (active) {
 				log.info('INFO: MPC closed', error);
 				active = false;
-				destroyRPC();
+				rpc.clearActivity();
 			}
 		});
 }
@@ -55,41 +55,40 @@ function initRPC() {
 	rpc = new Client({ transport: 'ipc' });
 	rpc.on('ready', () => {
 		discord_connected();
-		rpc.transport.once('close', async () => {
-			discord_running = false;
-			clearTimeout(mpc_update);
-			await destroyRPC();
-			log.warn('WARN: Connection to Discord client was closed. Trying again in 5 seconds...');
-			destroyRPC();
-			setTimeout(initRPC,5000);
-		});
+	});
+	rpc.transport.once('close', (error) => {
+		discord_running = false;
+		// setTimeout(restart,5000);
+		log.warn(`WARN: Connection to Discord client was closed. error ${JSON.stringify(error)}`);
 	});
 	rpc.on('error',error =>{
 		log.warn('ERROR: Connection to Discord has failed. Trying again in 5 seconds...; clientId: '+clientId +' error: ' + JSON.stringify(error));
-		destroyRPC();
-		setTimeout(initRPC,5000);
+		setTimeout(restart,5000);
 	});
 	discord_login();
 }
 
 function discord_login(){
-	rpc.login({clientId}).catch( error => {
-		log.warn('ERROR: Connection to Discord has failed. Trying again in 5 seconds...; clientId: '+clientId +' error: ' + JSON.stringify(error));
-		destroyRPC();
+	rpc.login({clientId}).catch( (error) => {
+		log.warn('ERROR: Login to Discord has failed. Trying again in 5 seconds...; clientId: '+clientId +' error: ' + JSON.stringify(error));
+		restart();
+	});
+}
+
+function restart(){
+	if(mpc_update){
+		clearTimeout(mpc_update);
+	}
+	destroyRPC().then(() =>{
 		initRPC();
+	}).catch(error =>{
+		log.warn('ERROR: destroying rps not possible; clientId: '+clientId +' error: ' + JSON.stringify(error));
 	});
 }
 
 // Destroys any active RPC connection.
 async function destroyRPC() {
-	if (rpc){
-		try{
-			await rpc.destroy();
-		}
-		catch(ex){
-			log.warn('ERROR: destroying rps not possible; clientId: '+clientId +' error: ' + JSON.stringify(ex));
-		}
-	}
+	return rpc.destroy();
 }
 
 // Boots the whole script, attempting to connect
