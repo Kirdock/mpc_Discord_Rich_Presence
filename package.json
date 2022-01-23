@@ -1,6 +1,7 @@
 {
   "name": "mpc_discord_rpc",
   "version": "1.0.0",
+  "type": "module",
   "description": "Discord Rich Presence for MPC-HC (with some personal adjustments)",
   "main": "index.js",
   "repository": {
@@ -14,14 +15,21 @@
   },
   "homepage": "https://github.com/Kirdock/mpc_Discord_Rich_Presence#readme",
   "scripts": {
+    "build": "tsc --build",
     "start": "del /F /Q mpc-discordrpc.log && pm2 start pm2.config.js",
     "stop": "pm2 delete mpc-discordrpc"
   },
   "dependencies": {
-    "discord-rpc": "^3.1.4",
-    "fancy-log": "^1.3.2",
+    "discord-rpc": "^4.0.1",
+    "form-data": "^4.0.0",
     "jsdom": "^11.6.2",
-    "pm2": "^4.5.1",
-    "snekfetch": "^4.0.0-beta.0"
+    "node-fetch": "^3.2.0",
+    "pm2": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/discord-rpc": "^4.0.0",
+    "@types/jsdom": "^16.2.14",
+    "@types/node-fetch": "^3.0.3",
+    "typescript": "^4.5.5"
   }
 }

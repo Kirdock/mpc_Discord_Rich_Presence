@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name        : 'mpc-discordrpc',
-    script      : 'index.js',
+    script      : 'dist/index.js',
     log         : 'mpc-discordrpc.log',
     output      : 'NULL',
     error       : 'NULL',
