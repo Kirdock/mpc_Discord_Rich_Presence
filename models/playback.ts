@@ -1,6 +1,6 @@
-import { Payload } from "../interfaces/payload";
-import { IPlayback, StateOptions } from "../interfaces/playback";
-import { Logger } from "../logger";
+import { Payload } from '../interfaces/payload.js';
+import { IPlayback, StateOptions } from '../interfaces/playback.js';
+import { Logger } from './logger.js';
 
 export class Playback implements IPlayback {
     filedir: string = '';

@@ -1,4 +1,7 @@
+import { LogLevel } from './models/logger.js';
+
 export const config = {
     port: 13579,
-    useStartTimeStamp: false
+    useStartTimeStamp: false,
+    logLevel: LogLevel.WARN,
 }

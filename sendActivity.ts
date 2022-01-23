@@ -1,4 +1,4 @@
-import { Logger } from './logger.js';
+import { Logger, LogLevel } from './models/logger.js';
 import { JSDOM } from 'jsdom';
 import { config } from './config.js';
 import { Client } from 'discord-rpc';
@@ -7,7 +7,7 @@ import { StateKeys, StateOptions } from './interfaces/playback.js';
 import { Payload } from './interfaces/payload.js';
 import { Playback } from './models/playback.js';
 
-const log = new Logger();
+const log = new Logger(config.logLevel);
 const special_regex = /^\d+(\.\d+)?\) \(([^)]+)\)/;
 const special_regex_title = /^\d+(\.\d+)? \(([^)]+)\)/;
 const special_index = 2;
@@ -97,9 +97,9 @@ const updatePresence = async (rpc: Client, htmlText: string): Promise<void> => {
             await rpc.setActivity(payload);
         }
         catch(error) {
-            log.error('ERROR: ', error);
+            log.error('', error);
         }
-        log.info('INFO: Presence update sent: ',`${states[playback.state].string} - ${playback.position} / ${playback.duration} - ${playback.filedir}`);
+        log.info('Presence update sent: ',`${states[playback.state].string} - ${playback.position} / ${playback.duration} - ${playback.filedir}`);
     }
     
     playback.prevState = playback.state;

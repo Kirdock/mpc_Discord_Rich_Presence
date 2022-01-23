@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Discord Rich Presence for MPC-HC (with some personal adjustments)",
-  "main": "index.js",
+  "main": "server.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kirdock/mpc_Discord_Rich_Presence.git"
@@ -16,7 +16,7 @@
   "homepage": "https://github.com/Kirdock/mpc_Discord_Rich_Presence#readme",
   "scripts": {
     "build": "tsc --build",
-    "start": "del /F /Q mpc-discordrpc.log && pm2 start pm2.config.js",
+    "start": "del /F /Q mpc-discordrpc.log && pm2 start pm2.config.cjs --node-args=\"-r esm\"",
     "stop": "pm2 delete mpc-discordrpc"
   },
   "dependencies": {
