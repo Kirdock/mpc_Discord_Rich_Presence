@@ -1,10 +1,9 @@
-import { Logger, LogLevel } from './models/logger.js';
+import { Logger } from './models/logger.js';
 import { JSDOM } from 'jsdom';
 import { config } from './config.js';
-import { Client } from 'discord-rpc';
+import { Client, Presence } from 'discord-rpc';
 import { readdirSync } from 'fs';
 import { StateKeys, StateOptions } from './interfaces/playback.js';
-import { Payload } from './interfaces/payload.js';
 import { Playback } from './models/playback.js';
 
 const log = new Logger(config.logLevel);
@@ -16,7 +15,7 @@ const ignoreNames = ['anime', '2) ger sub (309-xxx)', 'Gesehen', 'Neu', 'Other']
 const skippedFolders = ['Staffel', 'Ger Dub'];
 const category = ['ova', 'oad', 'web', 'special', 'tv special', 'specials', 'filme', 'extras', 'movie', 'bonus'];
 const playback = new Playback(log, config.useStartTimeStamp);
-const states: {[state in StateOptions]: { string: string, stateKey: StateKeys }} = {
+const states: Record<StateOptions, {string: string, stateKey: StateKeys}> = {
     [StateOptions.IDLE]: {
         string: 'Idling',
         stateKey: 'stop'
@@ -73,7 +72,7 @@ const updatePresence = async (rpc: Client, htmlText: string): Promise<void> => {
         playback.episode = getFirstNumbers(episodeName) || files.findIndex(file => file === episodeName) + 1 || 1;
         playback.episodeCount = lastNumber < playback.episode ? playback.episode : lastNumber;
         
-        const payload: Payload = {
+        const payload: Presence = {
             state: 'Episode',
             startTimestamp: 0,
             details: playback.filedir + (episode.category ? ' | '+episode.category.toString() : ''),
@@ -110,7 +109,7 @@ function getFileNames(dir: string): string[] {
     return readdirSync(dir, { withFileTypes: true })
         .filter(item => item.isFile() && !(/(^|\/)\.[^\/\.]/g).test(item.name))
         .map(item => item.name)
-        .sort();
+        .sort((a,b) => a.localeCompare(b));
 }
 
 function getTitle(title: string, moreThanOneFile: boolean): string {

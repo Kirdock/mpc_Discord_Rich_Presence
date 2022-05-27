@@ -1,8 +1,8 @@
-import { Logger, LogLevel } from './models/logger.js';
+import { Logger } from './models/logger.js';
 import { Client } from 'discord-rpc';
 import { updatePresence } from './sendActivity.js';
 import { config } from './config.js';
-import fetch, { Response } from 'node-fetch';
+import fetch, {Response} from 'node-fetch';
 
 const clientId = '436465482111909889';
 const log = new Logger(config.logLevel);
@@ -59,7 +59,6 @@ async function initRPC(): Promise<void> {
 		log.warn(`Connection to Discord client was closed.`, error);
 	});
 
-	// @ts-ignore
 	rpc.on('error', error =>{
 		log.warn(`Connection to Discord has failed. Trying again in 5 seconds...; clientId: ${clientId}`, error);
 		setTimeout(restart, 5000);

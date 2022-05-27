@@ -1,4 +1,4 @@
-import { Payload } from '../interfaces/payload.js';
+import { Presence } from 'discord-rpc';
 import { IPlayback, StateOptions } from '../interfaces/playback.js';
 import { Logger } from './logger.js';
 
@@ -12,13 +12,13 @@ export class Playback implements IPlayback {
     prevPosition: number = 0;
     episode: number = 0;
     episodeCount: number = 0;
-    private timeMethod: (payload: Payload) => void;
+    private timeMethod: (payload: Presence) => void;
 
     constructor(private readonly log: Logger, useStartTimeStamp: boolean) {
         this.timeMethod = useStartTimeStamp ? this.setStartTimeStamp : this.setEndTimeStamp
     }
 
-    public setStartTimestamp(payload: Payload): void {
+    public setStartTimestamp(payload: Presence): void {
         switch (this.state) {
             case StateOptions.IDLE:
             case StateOptions.STOPPED:
@@ -34,12 +34,12 @@ export class Playback implements IPlayback {
         }
     }
 
-    private setEndTimeStamp(payload: Payload){
+    private setEndTimeStamp(payload: Presence){
         payload.startTimestamp = undefined;
         payload.endTimestamp = Math.floor((Date.now() + this.duration - this.position)/1000);
     }
     
-    private setStartTimeStamp(payload: Payload){
+    private setStartTimeStamp(payload: Presence){
         payload.startTimestamp = Math.floor((Date.now() - this.position)/1000);
     }
 }
