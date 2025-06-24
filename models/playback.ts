@@ -1,6 +1,6 @@
 import { Presence } from 'discord-rpc';
-import { IPlayback, StateOptions } from '../interfaces/playback.js';
-import { Logger } from './logger.js';
+import { IPlayback, StateOptions } from '../interfaces/playback';
+import { Logger } from './logger';
 
 export class Playback implements IPlayback {
     filedir: string = '';

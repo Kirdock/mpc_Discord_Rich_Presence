@@ -1,0 +1,10 @@
+diff --git a/node_modules/@types/discord-rpc/index.d.ts b/node_modules/@types/discord-rpc/index.d.ts
+index ce2510f..e25dc82 100644
+--- a/node_modules/@types/discord-rpc/index.d.ts
++++ b/node_modules/@types/discord-rpc/index.d.ts
+@@ -474,4 +474,5 @@ export interface Presence {
+     spectateSecret?: string | undefined;
+     joinSecret?: string | undefined;
+     buttons?: Array<{ label: string; url: string }> | undefined;
++    type?: number;
+ }

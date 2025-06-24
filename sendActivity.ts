@@ -1,12 +1,13 @@
-import { Logger } from './models/logger.js';
+import { Logger } from './models/logger';
 import { JSDOM } from 'jsdom';
-import { config } from './config.js';
+import { config } from './config';
 import { Client, Presence } from 'discord-rpc';
 import { readdirSync } from 'fs';
-import { StateKeys, StateOptions } from './interfaces/playback.js';
-import { Playback } from './models/playback.js';
+import { StateKeys, StateOptions } from './interfaces/playback';
+import { Playback } from './models/playback';
 
 const log = new Logger(config.logLevel);
+const isWatching = true;
 const special_regex = /^\d+(\.\d+)?\) \(([^)]+)\)/;
 const special_regex_title = /^\d+(\.\d+)? \(([^)]+)\)/;
 const special_index = 2;
@@ -34,7 +35,7 @@ const states: Record<StateOptions, {string: string, stateKey: StateKeys}> = {
     }
 };
 
-const updatePresence = async (rpc: Client, htmlText: string): Promise<void> => {
+export const updatePresence = async (rpc: Client, htmlText: string): Promise<void> => {
     if(!htmlText){
         rpc.clearActivity();
         return;
@@ -59,7 +60,7 @@ const updatePresence = async (rpc: Client, htmlText: string): Promise<void> => {
             duration
         });
         await rpc.clearActivity();
-    } else if ((state !== playback.prevState) || (state === '2' && differenceLastCheckMs > 1000)) { //1 second tolerance
+    } else if ((state !== playback.prevState) || (state === '2' && differenceLastCheckMs > 1000)) {
         const files = getFileNames(dir);
         const lastFile = files[files.length-1];
         const episode = getEpisodeInformation(episodeName.substring(0,episodeName.lastIndexOf('.')));
@@ -73,26 +74,28 @@ const updatePresence = async (rpc: Client, htmlText: string): Promise<void> => {
         playback.episodeCount = lastNumber < playback.episode ? playback.episode : lastNumber;
         
         const payload: Presence = {
-            state: 'Episode',
+            state: isWatching ? `Episode ${playback.episode} of ${playback.episodeCount}` : 'Episode',
             startTimestamp: 0,
             details: playback.filedir + (episode.category ? ' | '+episode.category.toString() : ''),
             largeImageKey: 'default',
-            largeImageText: episode.name,
+            largeImageText: episode.name.includes('1080p') ? undefined : episode.name,
             smallImageKey: states[playback.state].stateKey,
             smallImageText: states[playback.state].string,
             partySize: playback.episode,
             partyMax: playback.episodeCount,
-            buttons: [
-                {
-                    label: 'Anisearch Profile',
-                    url: 'https://www.anisearch.de/member/22752,kirdock/anime?char=all&vtype=1,2,3,4,5&sort=updated&order=desc&view=2&title=&titlex='
-                }
-            ]
+            type: 3,
+            // buttons: [
+            //     {
+            //         label: 'Anisearch Profile',
+            //         url: 'https://www.anisearch.de/member/22752,kirdock/anime?char=all&vtype=1,2,3,4,5&sort=updated&order=desc&view=2&title=&titlex='
+            //     }
+            // ]
         };
 
         playback.setStartTimestamp(payload);
 
         try {
+            console.log('send', payload)
             await rpc.setActivity(payload);
         }
         catch(error) {
@@ -117,29 +120,30 @@ function getTitle(title: string, moreThanOneFile: boolean): string {
 
     let subtitle = '';
     for(let i = splitArray.length - 1; i >= 0; i--){
-        if(!ignoreNames.includes(splitArray[i].toLowerCase()) && !skippedFolders.some(item => splitArray[i].includes(item))){
-            title = splitArray[i];
-            const text = splitArray[i];
+        if (ignoreNames.includes(splitArray[i].toLowerCase()) || skippedFolders.some(item => splitArray[i].includes(item))) {
+            continue;
+        }
+        title = splitArray[i];
+        const text = splitArray[i];
 
-            //#region get category; example: 1.1) (OVA) - myTitle
-            const matches = special_regex.exec(title);
-            if(matches && !ignoreNames.includes(matches[special_index])){
-                let temp = ' | '+ matches[special_index];
-                if(moreThanOneFile){
-                    temp = temp.toString() + (' | ' + getEpisodeInformation(text).name);
-                }
-                subtitle = temp + subtitle;
-                
-                continue;
+        //#region get category; example: 1.1) (OVA) - myTitle
+        const matches = special_regex.exec(title);
+        if(matches && !ignoreNames.includes(matches[special_index])){
+            let temp = ' | '+ matches[special_index];
+            if(moreThanOneFile){
+                temp = temp.toString() + (' | ' + getEpisodeInformation(text).name);
             }
-            //#endregion
+            subtitle = temp + subtitle;
+            
+            continue;
+        }
+        //#endregion
 
-            if(i > 0 && category.includes(splitArray[i-1].toLowerCase()) || category.includes(splitArray[i].toLowerCase())){
-                subtitle = (text ? ' | '+text : '') + subtitle;
-            }
-            else{
-                return removeOrder(title) +  subtitle;
-            }
+        if(i > 0 && category.includes(splitArray[i-1].toLowerCase()) || category.includes(splitArray[i].toLowerCase())){
+            subtitle = (text ? ' | '+text : '') + subtitle;
+        }
+        else{
+            return removeOrder(title) +  subtitle;
         }
     }
 
@@ -148,32 +152,36 @@ function getTitle(title: string, moreThanOneFile: boolean): string {
 
 function removeOrder(text: string): string {
     const number = getFirstNumbers(text);
-    if(!isNaN(number)){
-        let index;
-        const case1 = ') - ';
-        const case2= ') ';
-        if((index = text.indexOf(case1) ) !== -1){
-            text = text.substring(index + case1.length);
-        } else if((index = text.indexOf(case2)) !== -1){
-            text = text.substring(index + case2.length)
-        }
-
+    if(isNaN(number)) {
+        return text;
     }
+    let index;
+    const case1 = ') - ';
+    const case2= ') ';
+    if ((index = text.indexOf(case1)) !== -1) {
+        return text.substring(index + case1.length);
+    }
+
+    if ((index = text.indexOf(case2)) !== -1) {
+        return text.substring(index + case2.length)
+    }
+
     return text;
 }
 
 function getEpisodeInformation(text: string): {name: string, category?: string} {
     const subtext_index = text.indexOf(numberTitleSeparator);
-    const result: {name: string, category?: string} = {name: text};
-    if(subtext_index > -1){
-        const textBefore = text.substring(0, subtext_index);
-        const matches = special_regex_title.exec(textBefore);
-        if(matches){
-            result.category = matches[special_index];
-        }
-        result.name = text.substring(subtext_index + numberTitleSeparator.length);
+
+    if(subtext_index === -1) {
+        return {name: text};
     }
-    return result;
+
+    const textBefore = text.substring(0, subtext_index);
+    const matches = special_regex_title.exec(textBefore);
+    return {
+        name: text.substring(subtext_index + numberTitleSeparator.length),
+        ...(matches && {category: matches[special_index]})
+    };
 }
 
 function getFirstNumbers(text: string): number {
@@ -181,7 +189,5 @@ function getFirstNumbers(text: string): number {
 }
 
 function trimStr (text: string, length: number): string {
-    return length > length ? text.substring(0, length - 3) + '...' : text;
+    return text.length > length ? text.substring(0, length - 3) + '...' : text;
 };
-
-export { updatePresence };

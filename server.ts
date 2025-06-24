@@ -1,14 +1,13 @@
-import { Logger } from './models/logger.js';
+import { Logger } from './models/logger';
 import { Client } from 'discord-rpc';
-import { updatePresence } from './sendActivity.js';
-import { config } from './config.js';
-import fetch, {Response} from 'node-fetch';
+import { updatePresence } from './sendActivity';
+import { config } from './config';
 
 const clientId = '436465482111909889';
 const log = new Logger(config.logLevel);
 let mpc_update: ReturnType<typeof setTimeout> | undefined;
 let rpc: Client;
-const uri = `http://localhost:${config.port}/variables.html`;
+const uri = `http://127.0.0.1:${config.port}/variables.html`;
 const checkMPCRunningInterval = 15_000;
 const updateInterval = 5_000;
 
@@ -35,8 +34,8 @@ async function fetchMPCData(): Promise<void> {
 	let res: Response | undefined;
 	try {
 		res = await fetch(uri);
-	} catch {
-		log.info('MPC closed');
+	} catch (error){
+		log.info('MPC closed', error);
 		rpc.clearActivity();
 		setTimeout(startMPCPolling, checkMPCRunningInterval);
 	}
@@ -50,6 +49,7 @@ async function fetchMPCData(): Promise<void> {
 async function initRPC(): Promise<void> {
 	rpc = new Client({ transport: 'ipc' });
 	rpc.on('ready', async () => {
+		console.log('ready')
 		log.info('Connected to Discord');
 		await startMPCPolling();
 	});
